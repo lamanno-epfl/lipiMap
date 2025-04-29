@@ -3,7 +3,6 @@
 add a logo here if you ever happen to have one for lipimap
 ..  <img src="https://user-images.githubusercontent.com/33202701/187203672-e0415eec-1278-4b2a-a097-5bb8b6ab694f.svg" width="300px" height="200px" align="center">
 
-|PyPI| |PyPIDownloads| |Docs|
 
 LipiMap: Biologically-Informed VAE for Lipidomics
 =================================================
