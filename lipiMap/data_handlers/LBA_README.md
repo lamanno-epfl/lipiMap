@@ -9,7 +9,7 @@ A significant challenge in MALDI-MSI analysis has been noise measurement and con
 
 This comprehensive processing pipeline forms the foundation of the Adult Mouse Lipid Brain Atlas (LBA), providing a standardized framework for lipid analysis across brain sections. The LBA project, curated by the [Laboratory of Brain Development and Biological Data Science at EPFL](https://www.epfl.ch/labs/nsbl/), aims to provide a standardized reference system for lipidomic data. As an atlas, it emphasizes the precise localization of lipid expressions within the brain, which is crucial for understanding the organ’s functional architecture and the interactions between its components.
 
-![LBA_pipeline](./images/lba.png)
+![LBA_pipeline](../../images/lba.png)
 
 ## Input Data Requirements
 
@@ -59,4 +59,4 @@ Note: The class automatically identifies lipid columns based on their naming pat
     - `to_anndata`: Convert processed data to AnnData format.
 
 The verbose output while processing data will appear as follows:
-![LBA_pipeline](./images/LBADataHandler_pipeline.png)
+![LBA_pipeline](../../images/LBADataHandler_pipeline.png)
