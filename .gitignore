@@ -1,5 +1,7 @@
 data/
 data_tmp/
+docs/
+docs_prova/
 *.h5ad
 *.parquet
 *.csv
