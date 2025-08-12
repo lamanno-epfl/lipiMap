@@ -1,11 +1,8 @@
 .. raw:: html
 
-add a logo here if you ever happen to have one for lipimap
-..  <img src="https://user-images.githubusercontent.com/33202701/187203672-e0415eec-1278-4b2a-a097-5bb8b6ab694f.svg" width="300px" height="200px" align="center">
-
-
 LipiMap: Biologically-Informed VAE for Lipidomics
 =================================================
+<img src="/home/fventuri/francesca/lipiMap/images/model.png" width="300px" height="200px" align="center">
 
 Why LipiMap
 -----------
@@ -29,23 +26,43 @@ It constructs a biologically informed latent space using Lipid Programs as build
 This capability enables to explore the active and inactive states of LPs across different brain units,
 allowing for a spatially-aware analysis of lipid metabolism across the brain.
 
+
 Installation
 ------------
-TODO
 
-See `documentation and tutorials <https://lipimap.readthedocs.io/>`_ for more information.
+**Sorry!** At the moment, LipiMap is only installable from source. We apologize for the inconvenience—rest assured, a PyPI package will be made available soon!
+
+**(Recommended) Create a conda environment before installing:**
+
+.. code-block:: bash
+
+   conda create -n lipimap python=3.12.2
+   conda activate lipimap
+
+
+To install the latest development version from source:
+
+.. code-block:: bash
+
+   git clone https://github.com/lamanno-epfl/lipiMap.git
+   cd lipimap
+   pip install -e .
+
+**Test your installation:**
+
+.. code-block:: bash
+
+   python -c "import lipiMap; print(lipiMap.__version__)"
+
+
+We invite you to become familiar with the code and its features by exploring our comprehensive tutorial notebook:
+
+   notebooks/TUTORIAL.ipynb
+
+This notebook will guide you through the main functionalities and typical workflows of LipiMap.
+
+.. See `documentation and tutorials <https://lipimap.readthedocs.io/>`_ for more information.
 
 Support and contribute
 ----------------------
 If you have questions or suggestions to be integrated into our pipeline, you can reach us by `email <francesca.venturi@alumni.epfl.ch>`_.
-
-
-
-.. |PyPI| image:: https://img.shields.io/pypi/v/scarches.svg
-   :target: https://pypi.org/project/scarches
-
-.. |PyPIDownloads| image:: https://pepy.tech/badge/scarches
-   :target: https://pepy.tech/project/scarches
-
-.. |Docs| image:: https://readthedocs.org/projects/scarches/badge/?version=latest
-   :target: https://scarches.readthedocs.io
