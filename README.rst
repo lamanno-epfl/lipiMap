@@ -2,7 +2,7 @@
 
 LipiMap: Biologically-Informed VAE for Lipidomics
 =================================================
-<img src="/home/fventuri/francesca/lipiMap/images/model.png" width="300px" height="200px" align="center">
+<img src="./images/model.png" width="300px" height="200px" align="center">
 
 Why LipiMap
 -----------
