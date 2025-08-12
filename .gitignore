@@ -3,6 +3,7 @@ data_tmp/
 *.h5ad
 *.parquet
 *.csv
+*.pkl
 
 .idea/
 __pycache__/
