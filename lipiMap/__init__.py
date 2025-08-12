@@ -1,4 +1,4 @@
-from . import data, metrics, trainers, models, plotting, utils, surgery
+from . import data, trainers, models, plotting, utils, surgery
 
 __author__ = ', '.join([
     'Francesca Venturi',

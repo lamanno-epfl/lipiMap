@@ -1,54 +1,56 @@
-import inspect
-import os
-import torch
-import pickle
-import numpy as np
-
-from anndata import AnnData, read
-from copy import deepcopy
-from typing import Optional, Union
+from anndata import AnnData
+from typing import Optional
 
 from .trvae import trVAE
 from ...trainers.trvae.unsupervised import trVAETrainer
-from ..base._utils import _validate_var_names
 from ..base._base import BaseMixin, SurgeryMixin, CVAELatentsMixin
+
+# Adapted from
+# Title: Biologically informed deep learning to query gene programs in single-cell atlases
+# Authors: Mohammad Lotfollahi, Sergei Rybakov, Karin Hrovatin, Soroor Hediyeh-zadeh,
+#          Carlos Talavera-López, Alexander V. Misharin & Fabian J. Theis
+# Code: https://github.com/theislab/scarches/tree/master/scarches/models/trvae/trvae_model.py
 
 
 class TRVAE(BaseMixin, SurgeryMixin, CVAELatentsMixin):
     """Model for scArches class. This class contains the implementation of Conditional Variational Auto-encoder.
 
-       Parameters
-       ----------
-       adata: : `~anndata.AnnData`
-            Annotated data matrix. Has to be count data for 'nb' and 'zinb' loss and normalized log transformed data
-            for 'mse' loss.
-       condition_key: String
-            column name of conditions in `adata.obs` data frame.
-       conditions: List
-            List of Condition names that the used data will contain to get the right encoding when used after reloading.
-       hidden_layer_sizes: List
-            A list of hidden layer sizes for encoder network. Decoder network will be the reversed order.
-       latent_dim: Integer
-            Bottleneck layer (z)  size.
-       dr_rate: Float
-            Dropput rate applied to all layers, if `dr_rate`==0 no dropout will be applied.
-       use_mmd: Boolean
-            If 'True' an additional MMD loss will be calculated on the latent dim. 'z' or the first decoder layer 'y'.
-       mmd_on: String
-            Choose on which layer MMD loss will be calculated on if 'use_mmd=True': 'z' for latent dim or 'y' for first
-            decoder layer.
-       mmd_boundary: Integer or None
-            Choose on how many conditions the MMD loss should be calculated on. If 'None' MMD will be calculated on all
-            conditions.
-       recon_loss: String
-            Definition of Reconstruction-Loss-Method, 'mse', 'nb' or 'zinb'.
-       beta: Float
-            Scaling Factor for MMD loss
-       use_bn: Boolean
-            If `True` batch normalization will be applied to layers.
-       use_ln: Boolean
-            If `True` layer normalization will be applied to layers.
+    Parameters
+    ----------
+    adata: : `~anndata.AnnData`
+         Annotated data matrix. Has to be count data for 'nb' and 'zinb' loss and
+         normalized log transformed data for 'mse' loss.
+    condition_key: String
+         column name of conditions in `adata.obs` data frame.
+    conditions: List
+         List of Condition names that the used data will contain to get the right
+         encoding when used after reloading.
+    hidden_layer_sizes: List
+         A list of hidden layer sizes for encoder network. Decoder network will
+         be the reversed order.
+    latent_dim: Integer
+         Bottleneck layer (z)  size.
+    dr_rate: Float
+         Dropput rate applied to all layers, if `dr_rate`==0 no dropout will be applied.
+    use_mmd: Boolean
+         If 'True' an additional MMD loss will be calculated on the latent dim.
+         'z' or the first decoder layer 'y'.
+    mmd_on: String
+         Choose on which layer MMD loss will be calculated on if 'use_mmd=True':
+         'z' for latent dim or 'y' for first decoder layer.
+    mmd_boundary: Integer or None
+         Choose on how many conditions the MMD loss should be calculated on.
+         If 'None' MMD will be calculated on all conditions.
+    recon_loss: String
+         Definition of Reconstruction-Loss-Method, 'mse'.
+    beta: Float
+         Scaling Factor for MMD loss
+    use_bn: Boolean
+         If `True` batch normalization will be applied to layers.
+    use_ln: Boolean
+         If `True` layer normalization will be applied to layers.
     """
+
     def __init__(
         self,
         adata: AnnData,
@@ -58,13 +60,13 @@ class TRVAE(BaseMixin, SurgeryMixin, CVAELatentsMixin):
         latent_dim: int = 10,
         dr_rate: float = 0.05,
         use_mmd: bool = False,
-        mmd_on: str = 'z',
+        mmd_on: str = "z",
         mmd_boundary: Optional[int] = None,
-        recon_loss: Optional[str] = 'mse',
+        recon_loss: Optional[str] = "mse",
         beta: float = 1,
         use_bn: bool = False,
         use_ln: bool = True,
-        logs: Optional[dict] = None
+        logs: Optional[dict] = None,
     ):
         self.adata = adata
 
@@ -72,7 +74,9 @@ class TRVAE(BaseMixin, SurgeryMixin, CVAELatentsMixin):
 
         if conditions is None:
             if condition_key is not None:
-                self.conditions_ = adata.obs[condition_key].unique().tolist()
+                self.conditions_ = (
+                    adata.obs[condition_key].unique().tolist()
+                )
             else:
                 self.conditions_ = []
         else:
@@ -117,26 +121,27 @@ class TRVAE(BaseMixin, SurgeryMixin, CVAELatentsMixin):
         lr: float = 1e-3,
         eps: float = 0.01,
         save_logs: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """Train the model.
 
-           Parameters
-           ----------
-           n_epochs
-                Number of epochs for training the model.
-           lr
-                Learning rate for training the model.
-           eps
-                torch.optim.Adam eps parameter
-           kwargs
-                kwargs for the TrVAE trainer.
+        Parameters
+        ----------
+        n_epochs
+             Number of epochs for training the model.
+        lr
+             Learning rate for training the model.
+        eps
+             torch.optim.Adam eps parameter
+        kwargs
+             kwargs for the TrVAE trainer.
         """
         self.trainer = trVAETrainer(
             self.model,
             self.adata,
             condition_key=self.condition_key_,
-            **kwargs)
+            **kwargs,
+        )
         self.trainer.train(n_epochs, lr, eps)
         self.is_trained_ = True
         if save_logs:
@@ -145,28 +150,30 @@ class TRVAE(BaseMixin, SurgeryMixin, CVAELatentsMixin):
     @classmethod
     def _get_init_params_from_dict(cls, dct):
         init_params = {
-            'condition_key': dct['condition_key_'],
-            'conditions': dct['conditions_'],
-            'hidden_layer_sizes': dct['hidden_layer_sizes_'],
-            'latent_dim': dct['latent_dim_'],
-            'dr_rate': dct['dr_rate_'],
-            'use_mmd': dct['use_mmd_'],
-            'mmd_on': dct['mmd_on_'],
-            'mmd_boundary': dct['mmd_boundary_'],
-            'recon_loss': dct['recon_loss_'],
-            'beta': dct['beta_'],
-            'use_bn': dct['use_bn_'],
-            'use_ln': dct['use_ln_'],
-            'logs': dct['logs_'] if 'logs_' in dct else None
+            "condition_key": dct["condition_key_"],
+            "conditions": dct["conditions_"],
+            "hidden_layer_sizes": dct["hidden_layer_sizes_"],
+            "latent_dim": dct["latent_dim_"],
+            "dr_rate": dct["dr_rate_"],
+            "use_mmd": dct["use_mmd_"],
+            "mmd_on": dct["mmd_on_"],
+            "mmd_boundary": dct["mmd_boundary_"],
+            "recon_loss": dct["recon_loss_"],
+            "beta": dct["beta_"],
+            "use_bn": dct["use_bn_"],
+            "use_ln": dct["use_ln_"],
+            "logs": dct["logs_"] if "logs_" in dct else None,
         }
 
         return init_params
 
     @classmethod
     def _validate_adata(cls, adata, dct):
-        if adata.n_vars != dct['input_dim_']:
+        if adata.n_vars != dct["input_dim_"]:
             raise ValueError("Incorrect var dimension")
 
-        adata_conditions = adata.obs[dct['condition_key_']].unique().tolist()
-        if not set(adata_conditions).issubset(dct['conditions_']):
+        adata_conditions = (
+            adata.obs[dct["condition_key_"]].unique().tolist()
+        )
+        if not set(adata_conditions).issubset(dct["conditions_"]):
             raise ValueError("Incorrect conditions")

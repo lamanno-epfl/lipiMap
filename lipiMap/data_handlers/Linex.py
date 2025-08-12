@@ -56,8 +56,9 @@ class LinexDataHandler:
         return pd.DataFrame(columns=self.lipid_names)
 
     def create_network(self):
-        self.lipid_network = LipidNetwork(data=self.upload_to_linex, 
-                                          allow_molspec_fails=True)
+        self.lipid_network = LipidNetwork(
+            data=self.upload_to_linex, allow_molspec_fails=True
+        )
         self.lipid_network.compute_native_network()
 
         def add_node_ids(network):
@@ -121,7 +122,9 @@ class LinexDataHandler:
         plt.title("Lipid Reactions Network", fontsize=20)
         plt.axis("off")
 
-        edge_handles = [plt.Line2D([0], [0], color=val, lw=4) for val in edge_colors[0].values()]
+        edge_handles = [
+            plt.Line2D([0], [0], color=val, lw=4) for val in edge_colors[0].values()
+        ]
         plt.legend(
             edge_handles,
             edge_colors[0].keys(),
@@ -137,7 +140,8 @@ class LinexDataHandler:
 
         if values is None:
             values = [
-                np.mean([G.nodes[node]["id"] for node in component]) for component in partition
+                np.mean([G.nodes[node]["id"] for node in component])
+                for component in partition
             ]
             add_legend = False
         else:
@@ -148,7 +152,9 @@ class LinexDataHandler:
         values = ranks / len(np.unique(values))
 
         component_value = {
-            node: values[idx] for idx, component in enumerate(partition) for node in component
+            node: values[idx]
+            for idx, component in enumerate(partition)
+            for node in component
         }
         colors = [plt.cm.rainbow(component_value[node]) for node in G.nodes()]
         pos = nx.get_node_attributes(G, "pos")
@@ -174,7 +180,8 @@ class LinexDataHandler:
         if add_legend:
             unique_values = np.unique(values)
             node_handles = [
-                plt.Line2D([0], [0], color=plt.cm.rainbow(val), lw=4) for val in unique_values
+                plt.Line2D([0], [0], color=plt.cm.rainbow(val), lw=4)
+                for val in unique_values
             ]
             plt.legend(
                 node_handles,
@@ -197,7 +204,9 @@ class LinexDataHandler:
         non_isolated_components = [
             component for component in nx.connected_components(G) if len(component) > 1
         ]
-        self.connected_components_ = [set(self.isolated_nodes)] + non_isolated_components
+        self.connected_components_ = [
+            set(self.isolated_nodes)
+        ] + non_isolated_components
 
     def louvain_clustering(self, graph=None):
         G = self.lipid_network.network if graph is None else graph
@@ -233,7 +242,9 @@ class LinexDataHandler:
         G = self.lipid_network.network if graph is None else graph
         mapping = {node: i for i, node in enumerate(G.nodes())}
         reversed_mapping = {i: node for node, i in mapping.items()}
-        G_IG = ig.Graph(len(G), [(mapping[edge[0]], mapping[edge[1]]) for edge in G.edges()])
+        G_IG = ig.Graph(
+            len(G), [(mapping[edge[0]], mapping[edge[1]]) for edge in G.edges()]
+        )
 
         for node in G.nodes(data=True):
             G_IG.vs[mapping[node[0]]].update_attributes(node[1])
@@ -266,9 +277,13 @@ class LinexDataHandler:
             eigenvectors[:, 1:n_clusters]
         )
         components = []
-        for comp in [set(tuple(np.where(cluster_labels == i)[0])) for i in range(n_clusters)]:
+        for comp in [
+            set(tuple(np.where(cluster_labels == i)[0])) for i in range(n_clusters)
+        ]:
             node_names = [
-                G.nodes[node]["data_name"] for node in G.nodes if G.nodes[node]["id"] in comp
+                G.nodes[node]["data_name"]
+                for node in G.nodes
+                if G.nodes[node]["id"] in comp
             ]
             components.append(set(node_names))
         return components
@@ -279,14 +294,18 @@ class LinexDataHandler:
         kmeans = KMeans(n_clusters=n_clusters)
         kmeans.fit(values)
         cluster_labels = kmeans.labels_
-        node_clusters = {node: label for node, label in zip(centrality.keys(), cluster_labels)}
+        node_clusters = {
+            node: label for node, label in zip(centrality.keys(), cluster_labels)
+        }
 
         components = [
             set([node for node, cluster in node_clusters.items() if cluster == i])
             for i in range(n_clusters)
         ]
 
-        avg_score = [np.mean([centrality[node] for node in comp]) for comp in components]
+        avg_score = [
+            np.mean([centrality[node] for node in comp]) for comp in components
+        ]
 
         return components, avg_score
 
@@ -299,7 +318,9 @@ class LinexDataHandler:
     def betweenness_centrality_clustering(self, graph=None):
         G = self.lipid_network.network if graph is None else graph
         betweenness_centrality = nx.betweenness_centrality(G)
-        components, avg_score = self.extract_centrality_components(betweenness_centrality)
+        components, avg_score = self.extract_centrality_components(
+            betweenness_centrality
+        )
         return components, avg_score
 
     def closeness_centrality_clustering(self, graph=None):
@@ -347,7 +368,9 @@ class LinexDataHandler:
                     color_map_nodes.append(reaction_colors[rt_name])
 
             plt.figure(figsize=(20, 20))
-            nx.draw_networkx_nodes(G, pos, node_color=color_map_nodes, node_size=800, alpha=0.6)
+            nx.draw_networkx_nodes(
+                G, pos, node_color=color_map_nodes, node_size=800, alpha=0.6
+            )
             nx.draw_networkx_edges(
                 G,
                 pos,
@@ -400,7 +423,9 @@ class LinexDataHandler:
             for p in path
             if family1.replace(" ", "(") in p
         )
-        intermediate_nodes = set(path[1] for path in self.bridging_families[(family1, family2)])
+        intermediate_nodes = set(
+            path[1] for path in self.bridging_families[(family1, family2)]
+        )
         final_nodes = set(
             p
             for path in self.bridging_families[(family1, family2)]
@@ -476,7 +501,9 @@ class LinexDataHandler:
             clusters.extend(subclusters)
         return clusters
 
-    def create_reactions_lmt(self, components, save_name="linex_reactions", avg_scores=None):
+    def create_reactions_lmt(
+        self, components, save_name="linex_reactions", avg_scores=None
+    ):
         """
         Creates a .lmt file based on the reactions from the given components.
         """
@@ -494,7 +521,9 @@ class LinexDataHandler:
                     level = (
                         "low"
                         if avg_scores[i] == min(avg_scores)
-                        else "high" if avg_scores[i] == max(avg_scores) else "medium"
+                        else "high"
+                        if avg_scores[i] == max(avg_scores)
+                        else "medium"
                     )
                     f.write(
                         f"{save_name}_{level}\t"

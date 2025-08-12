@@ -6,6 +6,7 @@ from collections import defaultdict
 import anndata
 import numpy as np
 
+
 class LBADataHandler:
     """
     A handler for preprocessing and managing MALDI-MSI lipidomics data.
@@ -76,7 +77,7 @@ class LBADataHandler:
 
         self._transform_data(initial_format, final_format)
         self._raw_counts_like(final_format, amplify)
-        
+
         self.nn, self.count, self.proportion = self.nn_count_proportion()
 
     def _extract_lipid_families(self):
@@ -100,7 +101,9 @@ class LBADataHandler:
         """
 
         self.lipid_columns = [
-            col for col in self.df.columns if any([l_fam in col for l_fam in self.lipid_families])
+            col
+            for col in self.df.columns
+            if any([l_fam in col for l_fam in self.lipid_families])
         ]
         print(f"{len(self.lipid_columns)} Lipid Expressions Columns")
 
@@ -146,7 +149,9 @@ class LBADataHandler:
                     self.df[col].max() - self.df[col].min()
                 )
         else:
-            raise ValueError("initial_format and final_format must be 'log', 'exp' or 'norm_exp'")
+            raise ValueError(
+                "initial_format and final_format must be 'log', 'exp' or 'norm_exp'"
+            )
 
         print(f"Data transformed from {initial_format} to {final_format}")
 
@@ -177,7 +182,9 @@ class LBADataHandler:
             Whether to amplify the data.
         """
         if final_format == "norm_exp" and amplify:
-            self.df[self.lipid_columns] = (self.df[self.lipid_columns] * 1000).round().astype(int)
+            self.df[self.lipid_columns] = (
+                (self.df[self.lipid_columns] * 1000).round().astype(int)
+            )
             print("Data amplified by 1000 to mimic gene expression data (raw counts)")
 
     def to_anndata(self, final_format="norm_exp"):
@@ -206,9 +213,6 @@ class LBADataHandler:
         # Select the columns for .obs attribute
         obs_data = self.df.drop(columns=cols)
 
-        # if 'structure_id_path' in obs_data.columns and 'structure_set_ids' in obs_data.columns and 'rgb_triplet' in obs_data.columns:
-        #     obs_data = obs_data.drop(columns=['structure_id_path', 'structure_set_ids', 'rgb_triplet'])
-
         # Create an AnnData object
         adata = anndata.AnnData(X=X_data, obs=obs_data)
 
@@ -216,11 +220,12 @@ class LBADataHandler:
 
     def create_family_lmt(self):
         """
-        Creates a `.lmt` (Lipid Matrix Transposed) file that maps lipid families to their associated lipids.
+        Creates a `.lmt` (Lipid Matrix Transposed) file that maps lipid families 
+        to their associated lipids.
 
-        This method organizes lipids into families based on the first word in their names
-        (assumed to be the family identifier) and writes the mappings to a tab-delimited
-        Lipid Matrix Transposed (`.lmt`) file.
+        This method organizes lipids into families based on the first word in 
+        their names (assumed to be the family identifier) and writes the mappings 
+        to a tab-delimited Lipid Matrix Transposed (`.lmt`) file.
 
         Parameters
         ----------

@@ -8,7 +8,8 @@ import torch
 
 # Adapted from
 # Title: Biologically informed deep learning to query gene programs in single-cell atlases
-# Authors: Mohammad Lotfollahi, Sergei Rybakov, Karin Hrovatin, Soroor Hediyeh-zadeh, Carlos Talavera-López, Alexander V. Misharin & Fabian J. Theis 
+# Authors: Mohammad Lotfollahi, Sergei Rybakov, Karin Hrovatin, Soroor Hediyeh-zadeh,
+#          Carlos Talavera-López, Alexander V. Misharin & Fabian J. Theis 
 # Code: https://github.com/theislab/scarches/tree/master/scarches/models/expimap/losses.py
 
 def kernel_matrix(x: torch.Tensor, sigma):

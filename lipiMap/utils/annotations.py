@@ -1,11 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
-import statistics
 import networkx as nx
-from scipy.stats import fisher_exact
-from statsmodels.stats.multitest import multipletests
 import pandas as pd
-from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +11,7 @@ import matplotlib.patches as mpatches
 import os
 
 from tqdm import tqdm
+
 
 def merge_lmt_files(masks, masks_path):
     """
@@ -47,10 +44,6 @@ def merge_lmt_files(masks, masks_path):
                     all_file.write(line)
 
     return files, masks
-
-
-# add binary I of size n_vars x number of annotated programs in files
-# if I[i,j]=1 then lipid i is active in annotation j
 
 
 def add_annotations(adata, masks_path, masks="all", min_lipids=2):
@@ -94,20 +87,23 @@ def add_annotations(adata, masks_path, masks="all", min_lipids=2):
         annot.append(programs)
 
         I = np.asarray(
-            [[int(lipid in prog) for prog in programs] for lipid in adata.var_names],
+            [
+                [int(lipid in prog) for prog in programs]
+                for lipid in adata.var_names
+            ],
             dtype="int32",
         )
 
         # Only select the programs that have at least 'min_lipids' lipids
         mask = I.sum(0) >= min_lipids  # [i]
-        # if max_lipids is not None:
-        #     mask &= I.sum(0) < max_lipids
 
         I = I[:, mask]  # --> n_vars x n_actual_progs
 
         adata.varm[masks[i]] = I
         adata.uns[masks[i]] = [
-            prog[0] for i, prog in enumerate(programs) if i not in np.where(~mask)[0]
+            prog[0]
+            for i, prog in enumerate(programs)
+            if i not in np.where(~mask)[0]
         ]
 
 
@@ -137,14 +133,16 @@ def add_lipid_program_enrichment(adata, mask_key):
 
     mask = adata.varm[mask_key]
     lipid_programs_names = adata.uns[mask_key]
-    lipid_indices = [np.where(mask[:, col] == 1)[0] for col in range(mask.shape[1])]
+    lipid_indices = [
+        np.where(mask[:, col] == 1)[0] for col in range(mask.shape[1])
+    ]
     means, stds = adata.X.mean(axis=0), adata.X.std(axis=0)
 
     for j, lp in enumerate(lipid_programs_names):
         lipids_idx = lipid_indices[j]
-        lipids_standardized = (adata.X[:, lipids_idx] - means[lipids_idx]) / stds[
-            lipids_idx
-        ]
+        lipids_standardized = (
+            adata.X[:, lipids_idx] - means[lipids_idx]
+        ) / stds[lipids_idx]
         # lp_enrichment = lipids_standardized.sum(axis=1)
         lp_enrichment = lipids_standardized.mean(axis=1)
         adata.obs[f"{lp}_enrichment"] = lp_enrichment
@@ -178,7 +176,8 @@ def remove_latent_collinearity(adata, mask_key):
     hamming_matrix = squareform(hamming_distances)
     upper_tri_indices = np.triu_indices(hamming_matrix.shape[0], k=1)
     identical_programs = find_duplicates(
-        upper_tri_indices[0][zero_indices], upper_tri_indices[1][zero_indices]
+        upper_tri_indices[0][zero_indices],
+        upper_tri_indices[1][zero_indices],
     )
     to_remove = []
     for group in identical_programs:
@@ -186,7 +185,9 @@ def remove_latent_collinearity(adata, mask_key):
             [adata.uns[mask_key][i] for i in group]
         )
         to_remove.append(list(group)[1:])
-    adata.varm[mask_key] = np.delete(mask, np.concatenate(to_remove), axis=1)
+    adata.varm[mask_key] = np.delete(
+        mask, np.concatenate(to_remove), axis=1
+    )
     adata.uns[mask_key] = [
         name
         for i, name in enumerate(adata.uns[mask_key])
@@ -200,33 +201,24 @@ def find_duplicates(first_array, second_array):
         G.add_edge(a, b)
     return list(nx.connected_components(G))
 
-# def _get_lp_representation_score(adata, 
-#                                  lp,
-#                                  counts, 
-#                                  lipid_programs, 
-#                                 #  lipid_programs_codes, 
-#                                  lp_cardinality, 
-#                                  verbose=True):
-    
-#     program_codes = lipid_programs[lipid_programs["LION_Name"].isin(lp.replace("_", " ").split(" + "))]["LION_Code"].values
-#     # program_indices = [lipid_programs_codes.get_loc(code) for code in program_codes]
-#     program_indices = [np.where(lipid_programs)[0][0] for code in program_codes]
-#     score = (counts*len(program_codes)) / lp_cardinality[program_indices].sum()
-#     if np.isnan(score):
-#         assert lp in adata.uns['LBA_lipid_families'], "Lipid family not found in lipid programs"
-#         if verbose: print(f"{lp} is not in LION, representation score set to 0 by default")  # noqa: E701
-#         score = 0
-#     return score
 
 def _get_lp_representation_score(adata, lp, count, sep_lp, verbose=True):
-    score = (count*sep_lp.shape[0]) / sep_lp['BrainLipids'].sum()
+    score = (count * sep_lp.shape[0]) / sep_lp["BrainLipids"].sum()
     if np.isnan(score):
-        assert lp in adata.uns['LBA_lipid_families'], "Lipid family not found in lipid programs"
-        if verbose: print(f"{lp} is not in LION, representation score set to 0 by default")  # noqa: E701
+        assert (
+            lp in adata.uns["LBA_lipid_families"]
+        ), "Lipid family not found in lipid programs"
+        if verbose:
+            print(
+                f"{lp} is not in LION, representation score set to 0 by default"
+            )  # noqa: E701
         score = 0
     return score
 
-def compute_representation_score(adata, lion_lipid_programs, multi_index_data, mask_key):
+
+def compute_representation_score(
+    adata, lion_lipid_programs, multi_index_data, mask_key
+):
     """
     Computes the lipid pr-->{color}
     This function calculates an absolute each li-->{color} of matching counts in the data and the cardinality of lipid programs in LION database.
@@ -258,28 +250,59 @@ def compute_representation_score(adata, lion_lipid_programs, multi_index_data, m
 
     # Extract the set of lipid programs annotated in the input dataset
     # Consider as separate programs the ones that are combined with ' + '
-    set_lps = {lp for mask in adata.uns[mask_key] for lp in mask.split(" + ")} # 60 in total (starting from 49)
-    
-    lion_lps = lion_lipid_programs[lion_lipid_programs["LION_Name"].isin(set_lps)]  # noqa: E501
-    brainlip = pd.read_csv(os.path.join(os.path.dirname(__file__), "../data/LION_Data/brainlip.csv"))
-    
+    set_lps = {
+        lp for mask in adata.uns[mask_key] for lp in mask.split(" + ")
+    }  # 60 in total (starting from 49)
+
+    lion_lps = lion_lipid_programs[
+        lion_lipid_programs["LION_Name"].isin(set_lps)
+    ]  # noqa: E501
+    brainlip = pd.read_csv(
+        os.path.join(
+            os.path.dirname(__file__), "../data/LION_Data/brainlip.csv"
+        )
+    )
+
     lipids_codes = [
-        multi_index_data.loc[:, multi_index_data.columns.get_level_values("Level 4")==col][
-            multi_index_data.loc[:, multi_index_data.columns.get_level_values("Level 4")==col] == 1
-        ].dropna().index
-        for col in lion_lps['LION_Code'].values
+        multi_index_data.loc[
+            :, multi_index_data.columns.get_level_values("Level 4") == col
+        ][
+            multi_index_data.loc[
+                :,
+                multi_index_data.columns.get_level_values("Level 4")
+                == col,
+            ]
+            == 1
+        ]
+        .dropna()
+        .index
+        for col in lion_lps["LION_Code"].values
     ]
-    lion_lps['Lipids'] = lipids_codes
-    lion_lps['BrainLipids'] = np.array([sum([code in set(brainlip["LION_Code"].dropna().values) for code in codes]) for codes in lipids_codes])
-    
+    lion_lps["Lipids"] = lipids_codes
+    lion_lps["BrainLipids"] = np.array(
+        [
+            sum(
+                [
+                    code in set(brainlip["LION_Code"].dropna().values)
+                    for code in codes
+                ]
+            )
+            for codes in lipids_codes
+        ]
+    )
+
     representation_scores = []
     counts = adata.varm[mask_key].sum(0)
-    representation_scores = [_get_lp_representation_score(adata, 
-                                                          lp, 
-                                                          counts[i], 
-                                                          lion_lps[lion_lps["LION_Name"].isin(lp.split(" + "))]) 
-                             for i, lp in enumerate(adata.uns[mask_key])]
-    
+    representation_scores = [
+        _get_lp_representation_score(
+            adata,
+            lp,
+            counts[i],
+            lion_lps[lion_lps["LION_Name"].isin(lp.split(" + "))],
+        )
+        for i, lp in enumerate(adata.uns[mask_key])
+    ]
+
     adata.uns["representation_score"] = np.array(representation_scores)
 
 
@@ -305,7 +328,9 @@ def compute_exclusivity_score(adata, mask_key):
     """
 
     mask_scores = adata.varm[mask_key].copy().astype(np.float64)
-    mask_scores *= (1 - mask_scores.sum(axis=1) / mask_scores.shape[1])[:, np.newaxis]
+    mask_scores *= (1 - mask_scores.sum(axis=1) / mask_scores.shape[1])[
+        :, np.newaxis
+    ]
     adata.uns["exclusivity_score"] = mask_scores.max(axis=0)
 
     # alternative
@@ -339,7 +364,9 @@ def compute_density_score(adata, mask_key, opt_density=0.4, tolerance=0.2):
         The density scores are stored in `adata.uns['density_score']` as a list.
     """
 
-    lp_density = adata.varm[mask_key].sum(axis=0) / adata.varm[mask_key].shape[0]
+    lp_density = (
+        adata.varm[mask_key].sum(axis=0) / adata.varm[mask_key].shape[0]
+    )
     adata.uns["density_score"] = np.exp(
         -((lp_density - opt_density) ** 2) / (2 * tolerance**2)
     )
@@ -388,7 +415,12 @@ def rank_LPs(adata, weights=[0.75, 0.15, 0.1]):
 
 
 def representation_analysis(
-    adata, LION_data_handler, multi_index_data, mask_key, n_replicas=10000, seed=0
+    adata,
+    LION_data_handler,
+    multi_index_data,
+    mask_key,
+    n_replicas=10000,
+    seed=0,
 ):
     """
     Simulates bootstrap replicas of lipids to estimate the representativeness of lipid programs within the dataset.
@@ -413,47 +445,82 @@ def representation_analysis(
     """
     lion_lipid_programs = LION_data_handler.lipid_programs
     n = len(adata.var_names)
-    set_lps = {lp for mask in adata.uns[mask_key] for lp in mask.split(" + ")} # 60 in total (starting from 49)
-    
-    lion_lps = lion_lipid_programs[lion_lipid_programs["LION_Name"].isin(set_lps)]  # noqa: E501
-    brainlip = pd.read_csv(os.path.join(os.path.dirname(__file__), "../data/LION_Data/brainlip.csv"))
-    
+    set_lps = {
+        lp for mask in adata.uns[mask_key] for lp in mask.split(" + ")
+    }  # 60 in total (starting from 49)
+
+    lion_lps = lion_lipid_programs[
+        lion_lipid_programs["LION_Name"].isin(set_lps)
+    ]  # noqa: E501
+    brainlip = pd.read_csv(
+        os.path.join(
+            os.path.dirname(__file__), "../data/LION_Data/brainlip.csv"
+        )
+    )
+
     lipids_codes = [
-        multi_index_data.loc[:, multi_index_data.columns.get_level_values("Level 4")==col][
-            multi_index_data.loc[:, multi_index_data.columns.get_level_values("Level 4")==col] == 1
-        ].dropna().index
-        for col in lion_lps['LION_Code'].values
+        multi_index_data.loc[
+            :, multi_index_data.columns.get_level_values("Level 4") == col
+        ][
+            multi_index_data.loc[
+                :,
+                multi_index_data.columns.get_level_values("Level 4")
+                == col,
+            ]
+            == 1
+        ]
+        .dropna()
+        .index
+        for col in lion_lps["LION_Code"].values
     ]
-    lion_lps['Lipids'] = lipids_codes
-    lion_lps['BrainLipids'] = np.array([sum([code in set(brainlip["LION_Code"].dropna().values) for code in codes]) for codes in lipids_codes])
+    lion_lps["Lipids"] = lipids_codes
+    lion_lps["BrainLipids"] = np.array(
+        [
+            sum(
+                [
+                    code in set(brainlip["LION_Code"].dropna().values)
+                    for code in codes
+                ]
+            )
+            for codes in lipids_codes
+        ]
+    )
 
     distribution = {lp_name: [] for lp_name in adata.uns[mask_key]}
-    
+
     np.random.seed(seed)
 
     print("Generating replicas...")
     for r in tqdm(range(n_replicas)):
-
         # Draw the subsample whose cardinality is the same of the input data annotation (i.e. number of lipids)
-        subsample = np.random.choice(brainlip["LION_Code"].dropna(), n, replace=False)
-        
+        subsample = np.random.choice(
+            brainlip["LION_Code"].dropna(), n, replace=False
+        )
+
         for i, lp in enumerate(adata.uns[mask_key]):
-            sep_lp = lion_lps[lion_lps["LION_Name"].isin(lp.split(" + "))] 
-            count = sep_lp['Lipids'].apply(lambda x: sum([code in subsample for code in x])).mean()
-            distribution[lp].append(_get_lp_representation_score(adata, 
-                                                                 lp, 
-                                                                 count, 
-                                                                 sep_lp, 
-                                                                 verbose=False))
+            sep_lp = lion_lps[lion_lps["LION_Name"].isin(lp.split(" + "))]
+            count = (
+                sep_lp["Lipids"]
+                .apply(lambda x: sum([code in subsample for code in x]))
+                .mean()
+            )
+            distribution[lp].append(
+                _get_lp_representation_score(
+                    adata, lp, count, sep_lp, verbose=False
+                )
+            )
 
     return distribution
 
-def representation_filtering(adata, 
-                             mask_framework, 
-                             distribution, 
-                             lb=40,
-                             ub=50,
-                             plot=True,):
+
+def representation_filtering(
+    adata,
+    mask_framework,
+    distribution,
+    lb=40,
+    ub=50,
+    plot=True,
+):
     """
     Generates a violin plot showing the distribution of lipid programs and their representation scores.
 
@@ -472,10 +539,14 @@ def representation_filtering(adata,
     Displays a violin plot.
     """
 
-    sorted_indices = np.argsort(adata.uns['final_score'])
-    
-    lower = [np.percentile(distribution[lp], lb) for lp in distribution.keys()]
-    upper = [np.percentile(distribution[lp], ub) for lp in distribution.keys()]
+    sorted_indices = np.argsort(adata.uns["final_score"])
+
+    lower = [
+        np.percentile(distribution[lp], lb) for lp in distribution.keys()
+    ]
+    upper = [
+        np.percentile(distribution[lp], ub) for lp in distribution.keys()
+    ]
 
     # Plot all the lp values with horizontal violin plots
     positions = np.arange(len(adata.uns[mask_framework]))
@@ -486,69 +557,110 @@ def representation_filtering(adata,
     for pos, i in zip(positions, sorted_indices):
         lp = adata.uns[mask_framework][i]
         if lp not in distribution:
-            distribution[lp] = np.zeros(distribution[next(iter(distribution))].shape)
-
+            distribution[lp] = np.zeros(
+                distribution[next(iter(distribution))].shape
+            )
         # Determine the color based on the representation_score
-        score = adata.uns['representation_score'][i]
+        score = adata.uns["representation_score"][i]
         if score > upper[i]:
-            color = 'green'
+            color = "green"
         elif lower[i] <= score <= upper[i]:
-            color = 'orange'
+            color = "orange"
         else:
-            color = 'red'
+            color = "red"
 
-        if lp in adata.uns['LBA_lipid_families']:
-            color = 'black'
+        if lp in adata.uns["LBA_lipid_families"]:
+            color = "black"
 
-        if color == 'green' or color == 'black':
+        if color == "green" or color == "black":
             to_keep.append(lp)
 
-        # Set the color for the violins and the median/extreme lines
-        if plot:
-            # Create the figure and axis
-            fig, ax = plt.subplots(figsize=(15, 25))        
-            parts = ax.violinplot(distribution[lp], positions=[pos], vert=False, widths=0.6, showmeans=False, showmedians=True)
-            for pc in parts['bodies']:
-                pc.set_facecolor(color)
-                pc.set_edgecolor(color)
-            parts['cmedians'].set_edgecolor(color)
-            parts['cmedians'].set_linewidth(2)
-            parts['cbars'].set_edgecolor(color)
-            parts['cbars'].set_linewidth(2)
-            parts['cmins'].set_edgecolor(color)
-            parts['cmins'].set_linewidth(2)
-            parts['cmaxes'].set_edgecolor(color)
-            parts['cmaxes'].set_linewidth(2)
-
-            # Plot the actual representation score
-            ax.scatter(score, pos, color='black', zorder=3, label='Representation Score' if pos == 0 else "")
-
     print(f"Number of lipid programs after filtering: {len(to_keep)}")
-    
+
     if plot:
         print("\nPlotting representation scores and distributions ...")
+        fig, ax = plt.subplots(figsize=(15, 25))
+        for pos, i in zip(positions, sorted_indices):
+            # Set the color for the violins and the median/extreme lines
+            lp = adata.uns[mask_framework][i]
+
+            score = adata.uns["representation_score"][i]
+            if score > upper[i]:
+                color = "green"
+            elif lower[i] <= score <= upper[i]:
+                color = "orange"
+            else:
+                color = "red"
+
+            if lp in adata.uns["LBA_lipid_families"]:
+                color = "black"
+
+            parts = ax.violinplot(
+                distribution[lp],
+                positions=[pos],
+                vert=False,
+                widths=0.6,
+                showmeans=False,
+                showmedians=True,
+            )
+            for pc in parts["bodies"]:
+                pc.set_facecolor(color)
+                pc.set_edgecolor(color)
+            parts["cmedians"].set_edgecolor(color)
+            parts["cmedians"].set_linewidth(2)
+            parts["cbars"].set_edgecolor(color)
+            parts["cbars"].set_linewidth(2)
+            parts["cmins"].set_edgecolor(color)
+            parts["cmins"].set_linewidth(2)
+            parts["cmaxes"].set_edgecolor(color)
+            parts["cmaxes"].set_linewidth(2)
+
+            # Plot the actual representation score
+            ax.scatter(
+                score,
+                pos,
+                color="black",
+                zorder=3,
+                label="Representation Score" if pos == 0 else "",
+            )
+
         # Set the y-axis labels to be horizontal
         ax.set_yticks(positions)
-        ax.set_yticklabels([adata.uns[mask_framework][i] for i in sorted_indices], fontsize=10)
+        ax.set_yticklabels(
+            [adata.uns[mask_framework][i] for i in sorted_indices],
+            fontsize=10,
+        )
 
         # Add labels and title
-        ax.set_xlabel('Values')
-        ax.set_ylabel('Lipid Programs')
-        ax.set_title('LBA vs LION - Representation Analysis')
+        ax.set_xlabel("Values")
+        ax.set_ylabel("Lipid Programs")
+        ax.set_title("LBA vs LION - Representation Analysis")
 
         # Create custom legend handles
-        green_patch = mpatches.Patch(color='green', label=f'LBA > {ub}th percentile')
-        orange_patch = mpatches.Patch(color='orange', label=f'{lb}th <= LBA <= {ub}th percentile')
-        red_patch = mpatches.Patch(color='red', label=f'LBA < {lb}th percentile')
-        black_patch = mpatches.Patch(color='black', label='Representation Score')
+        green_patch = mpatches.Patch(
+            color="green", label=f"LBA > {ub}th percentile"
+        )
+        orange_patch = mpatches.Patch(
+            color="orange", label=f"{lb}th <= LBA <= {ub}th percentile"
+        )
+        red_patch = mpatches.Patch(
+            color="red", label=f"LBA < {lb}th percentile"
+        )
+        black_patch = mpatches.Patch(
+            color="black", label="Representation Score"
+        )
 
         # Add legend
-        ax.legend(handles=[green_patch, orange_patch, red_patch, black_patch], loc='upper right')
+        ax.legend(
+            handles=[green_patch, orange_patch, red_patch, black_patch],
+            loc="upper right",
+        )
 
         plt.tight_layout()
         plt.show()
 
     return to_keep
+
 
 # TODO: Implement the following functions
 # def perform_ORA(adata, LION_data_handler, mask_framework, files):
@@ -617,7 +729,9 @@ def representation_filtering(adata,
 
 def manual_programs_removal(adata, mask_framework, to_remove):
     to_remove = set(adata.uns[mask_framework]).intersection(to_remove)
-    indices_to_remove = [adata.uns[mask_framework].index(prog) for prog in to_remove]
+    indices_to_remove = [
+        adata.uns[mask_framework].index(prog) for prog in to_remove
+    ]
     adata.varm[mask_framework] = np.delete(
         adata.varm[mask_framework], indices_to_remove, axis=1
     )
@@ -626,6 +740,7 @@ def manual_programs_removal(adata, mask_framework, to_remove):
         for i in range(len(adata.uns[mask_framework]))
         if i not in indices_to_remove
     ]
+
 
 def manual_sections_removal(adata, to_remove):
     for i in to_remove:

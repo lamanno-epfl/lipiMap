@@ -1,8 +1,7 @@
-# Maybe do a whole class about Kernel PCA... see KPCA_dimreduction in lipiMap.plotting.lipimap_eval
-
 import numpy as np
 
-def ensure_posdef(matrix): 
+
+def ensure_posdef(matrix):
     """
     Ensures that a given square matrix is positive definite by adjusting its eigenvalues.
 
@@ -17,10 +16,15 @@ def ensure_posdef(matrix):
         A positive definite matrix derived from the input matrix by adjusting its eigenvalues.
     """
     eigenvalues, eigenvectors = np.linalg.eigh(matrix)
-    eigenvalues[eigenvalues <= 0] = np.min(eigenvalues[eigenvalues > 0]) * 1e-5
-    pd_matrix = np.dot(eigenvectors, np.dot(np.diag(eigenvalues), eigenvectors.T))
+    eigenvalues[eigenvalues <= 0] = (
+        np.min(eigenvalues[eigenvalues > 0]) * 1e-5
+    )
+    pd_matrix = np.dot(
+        eigenvectors, np.dot(np.diag(eigenvalues), eigenvectors.T)
+    )
 
     return pd_matrix
+
 
 def compute_adjusting_weight_cov_matrix(cov_matrix, mask):
     """
@@ -40,10 +44,10 @@ def compute_adjusting_weight_cov_matrix(cov_matrix, mask):
         The adjusted weight covariance matrix, where weights are increased for each pair of lipids belonging to the same lipid program.
     """
     weight_matrix = np.ones_like(cov_matrix)
-    
+
     for j in range(mask.shape[1]):
         lipids_in_program = np.where(mask[:, j] == 1)[0]
-        
+
         for i in lipids_in_program:
             for k in lipids_in_program:
                 if i != k:
