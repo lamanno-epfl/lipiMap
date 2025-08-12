@@ -47,7 +47,7 @@ Installation
 .. code-block:: bash
 
    git clone https://github.com/lamanno-epfl/lipiMap.git
-   cd lipimap
+   cd lipiMap
    pip install -e .
 
 **Test your installation:**
