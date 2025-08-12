@@ -32,7 +32,7 @@ allowing for a spatially-aware analysis of lipid metabolism across the brain.
 Installation
 ------------
 
-**Sorry!** At the moment, LipiMap is only installable from source. We apologize for the inconvenience—rest assured, a PyPI package will be made available soon!
+**Sorry!** At the moment, LipiMap is only installable from source. We apologize for the inconvenience. A PyPI package will be made available soon!
 
 **(Recommended) Create a conda environment before installing:**
 
@@ -42,7 +42,7 @@ Installation
    conda activate lipimap
 
 
-To install the latest development version from source:
+**To install the latest development version from source:**
 
 .. code-block:: bash
 
