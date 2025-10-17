@@ -71,8 +71,6 @@ The `filter_and_aggregate()` method is designed to process the tabular represent
 
 ![Extraction of LPs from LION](../../images/lion_mat_PS.png)
 
-![Extraction of LPs from LION](../../images/tabular_LION.png)
-
 *Figure: Upon selecting a refinement level (here, the specific 4th level marker nodes are shown), each row of the tabular DataFrame is populated. Users also have the option to adjust the cropping and aggregation of columns according to their desired focus category.*
 
 #### Handling more specific annotations
